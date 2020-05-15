@@ -5,7 +5,7 @@ variables:
   buildConfiguration: 'Release'
   wwwrootDir: 'Tailspin.SpaceGame.Web/wwwroot'
   dotnetSdkVersion: '3.1.100'
-
+  releaseBranchName: 'release' #created for release branch
 #variables
 #-----Build Stage ---
 stages:
@@ -68,10 +68,16 @@ stages:
   
       - publish: '$(Build.ArtifactStagingDirectory)'
         artifact: drop
-  #####-------------Deploy--------
-  - stage: 'Deploy'
-    displayName: 'Deploy the web application'
+  #####  Deploy multi stage
+  - stage: 'Dev'
+    displayName: 'Deploy to the dev environment'
     dependsOn: Build
+    condition: |
+      and
+      (
+        succeeded(),
+        eq(variables['Build.SourceBranchName'], variables['releaseBranchName'])
+      )
     jobs:
     - deployment: Deploy
       pool:
@@ -84,13 +90,36 @@ stages:
           deploy:
             steps:
             - download: current
-              artifact: drop
+              artifact: '$(Pipeline.Workspace)/drop/$(buildConfiguration)/*.zip'
             - task: AzureWebApp@1
               displayName: 'Azure App Service Deploy: website'
               inputs:
-                azureSubscription: 'Resource Manager - Tail Spin- Space Game'
-                appName: '$(WebAppName)'
+                azureSubscription: 'Resource Manager - Tailspin - Space Game'
+                appName: '$(WebAppNameDev)'
                 package: '$(Pipeline.Workspace)/drop/$(buildConfiguration)/*.zip'
+  #####-------------Deploy old--------
+  # - stage: 'Deploy'
+  #   displayName: 'Deploy the web application'
+  #   dependsOn: Build
+  #   jobs:
+  #   - deployment: Deploy
+  #     pool:
+  #       vmImage: 'ubuntu-16.04'
+  #     environment: dev
+  #     variables:
+  #     - group: Release
+  #     strategy:
+  #       runOnce:
+  #         deploy:
+  #           steps:
+  #           - download: current
+  #             artifact: drop
+  #           - task: AzureWebApp@1
+  #             displayName: 'Azure App Service Deploy: website'
+  #             inputs:
+  #               azureSubscription: 'Resource Manager - Tail Spin- Space Game'
+  #               appName: '$(WebAppName)'
+  #               package: '$(Pipeline.Workspace)/drop/$(buildConfiguration)/*.zip'
 #   #steps 
 # steps:
 # - task: UseDotNet@2
