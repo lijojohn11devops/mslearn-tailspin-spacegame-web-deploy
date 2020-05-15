@@ -108,7 +108,7 @@ stages:
   - stage: 'Test'
     displayName: 'Deploy to the Test environmen  '
     dependsOn: dev
-    condition: eq(variables['Build.Reason'],['schedule'])
+    condition: eq(variables['Build.Reason'],'schedule')
     jobs:
     - deployment: Deploy
       pool:
