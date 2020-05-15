@@ -6,6 +6,13 @@ variables:
   wwwrootDir: 'Tailspin.SpaceGame.Web/wwwroot'
   dotnetSdkVersion: '3.1.100'
   releaseBranchName: 'release-pipeline' #created for release branch
+schedules:
+  - cron: '0 3 * * *'
+    displayName: 'deploy every day at 3 AM'
+    branches:
+       include:
+        - 'release-pipeline'
+    always: false
 #variables
 #-----Build Stage ---
 stages:
@@ -70,7 +77,7 @@ stages:
         artifact: drop
   #####  Deploy multi stage
   - stage: 'Dev'
-    displayName: 'Deploy to the devvvvvS environmen ${{ variables.Build.SourceBranchName }}'
+    displayName: 'Deploy to the devvvvvS environmen  '
     dependsOn: Build
     condition: |
       and
@@ -96,6 +103,30 @@ stages:
               inputs:
                 azureSubscription: 'Resource Manager - Tailspin - Space Game'
                 appName: '$(WebAppNameDev)'
+                package: '$(Pipeline.Workspace)/drop/$(buildConfiguration)/*.zip'
+
+  - stage: 'Test'
+    displayName: 'Deploy to the Test environmen  '
+    dependsOn: dev
+    condition: eq(variables['Build.Reason'],['schedule'])
+    jobs:
+    - deployment: Deploy
+      pool:
+        vmImage: 'ubuntu-16.04'
+      environment: dev
+      variables:
+      - group: Release
+      strategy:
+        runOnce:
+          deploy:
+            steps:
+            - download: current
+              artifact: '$(Pipeline.Workspace)/drop/$(buildConfiguration)/*.zip'
+            - task: AzureWebApp@1
+              displayName: 'Azure App Service Deploy: website - multi stage dev'
+              inputs:
+                azureSubscription: 'Resource Manager - Tailspin - Space Game'
+                appName: '$(WebAppNameTest)'
                 package: '$(Pipeline.Workspace)/drop/$(buildConfiguration)/*.zip'
   #####-------------Deploy old--------
   # - stage: 'Deploy'
