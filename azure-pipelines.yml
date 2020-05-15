@@ -70,7 +70,7 @@ stages:
         artifact: drop
   #####  Deploy multi stage
   - stage: 'Dev'
-    displayName: 'Deploy to the devvvvvS environmen ${{ variables.releaseBranchName }}'
+    displayName: 'Deploy to the devvvvvS environmen ${{ variables.Build.SourceBranchName }}'
     dependsOn: Build
     condition: |
       and
